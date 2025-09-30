@@ -1,4 +1,3 @@
-# worker_manager.py
 import random
 
 
