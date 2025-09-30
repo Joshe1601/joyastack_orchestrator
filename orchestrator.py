@@ -27,7 +27,8 @@ def main():
         print("3) Definir Topología")
         print("4) Listar VMs desplegadas")
         print("5) Reiniciar cluster (borrar VMs)")
-        print("6) Salir")
+        print("6) Eliminar VM específica")
+        print("7) Salir")
 
         option = input("> ")
 
@@ -47,6 +48,15 @@ def main():
             case "5":
                 worker_mgr.reset_cluster()
             case "6":
+                worker_mgr.list_vms()
+                vmn = input("Ingrese nombre de VM a eliminar (ej: VM1): ")
+                vm_to_kill = next((v for v in worker_mgr.vm_inventory if v["name"] == vmn), None)
+                if vm_to_kill:
+                    worker_mgr.delete_vm(vm_to_kill)
+                    worker_mgr.vm_inventory = [v for v in worker_mgr.vm_inventory if v["name"] != vmn]
+                else:
+                    print("No existe esa VM")
+            case "7":
                 print("Saliendo...")
                 sys.exit(0)
             case _:

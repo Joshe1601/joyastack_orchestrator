@@ -66,7 +66,6 @@ class WorkerManager:
 
             if err:
                 print(f"Error creando VM en {w_name}: {err}")
-                ssh.close()
                 continue
 
             print(out, err)
