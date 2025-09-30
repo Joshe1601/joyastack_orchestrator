@@ -16,8 +16,9 @@ def main():
     print("=== Orquestador Cloud ===")
     user = input("Usuario SSH: ")
     passwd = getpass.getpass("Contraseña SSH: ")
+    gateway_ip = input("IP del Gateway: ")
 
-    worker_mgr = WorkerManager(WORKERS, user, passwd)
+    worker_mgr = WorkerManager(WORKERS, gateway_ip, user, passwd)
 
     while True:
         print("\nOpciones:")

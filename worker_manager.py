@@ -3,8 +3,9 @@ from ssh_utils import SSHConnection
 
 
 class WorkerManager:
-    def __init__(self, workers, ssh_user, ssh_pass):
+    def __init__(self, workers, gateway_ip, ssh_user, ssh_pass):
         self.workers = workers  # dict con {worker1: {ip, ssh_port}, ...}
+        self.gateway_ip = gateway_ip  # IP del gateway
         self.ssh_user = ssh_user
         self.ssh_pass = ssh_pass
         self.vm_inventory = []  # lista de dicts con info de VMs
@@ -45,7 +46,7 @@ class WorkerManager:
             }
 
             ssh = SSHConnection(
-                wdata["ip"], wdata["ssh_port"], self.ssh_user, self.ssh_pass
+                self.gateway_ip, wdata["ssh_port"], self.ssh_user, self.ssh_pass
             )
             if not ssh.connect():
                 print(f"No se pudo conectar a {w_name}")
@@ -60,8 +61,8 @@ class WorkerManager:
                 f"/tmp/vm_create.sh {vm_info['name']} br-int {vlan} {vnc_port} "
                 f"{vm_info['cpus']} {vm_info['ram']} {vm_info['disk']} {vm_info['mac']}"
             )
+            print(f"Ejecutando en {w_name}: {cmd}")
             out, err = ssh.exec_command(cmd)
-            print(f"➡️ Ejecutando en {w_name}: {cmd}")
 
             if err:
                 print(f"Error creando VM en {w_name}: {err}")
@@ -79,7 +80,7 @@ class WorkerManager:
             ssh.close()
 
             print(
-                f"✅ {vm_info['name']} creada en {w_name}, PID={vm_info['pid']}"
+                f"{vm_info['name']} creada en {w_name}, PID={vm_info['pid']}"
             )
             print(
                 f"   Acceso VNC local: vnc://127.0.0.1:{30010+vm_id}\n"
