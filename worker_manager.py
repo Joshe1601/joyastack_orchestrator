@@ -41,6 +41,7 @@ class WorkerManager:
                 "ram": ram,
                 "disk": disk,
                 "vlan": vlan,
+                "tap": tap_name,
                 "vnc_port": vnc_port,
                 "mac": f"20:19:37:33:ee:{mac_suffix}",  # OJO: acá la MAC empieza con mi código :V
             }
@@ -64,11 +65,10 @@ class WorkerManager:
             print(f"Ejecutando en {w_name}: {cmd}")
             out, err = ssh.exec_sudo(cmd)
 
-            if err:
-                print(f"Error creando VM en {w_name}: {err}")
-                continue
+            # if err:
+            #     print(f"Error creando VM en {w_name}: {err}")
 
-            print(out, err)
+            print("Output:", out, err)
 
             # Obtener el PID QEMU remoto
             pid_cmd = f"pgrep -f 'qemu-system-x86_64.*-name {vm_info['name']}'"
@@ -108,7 +108,7 @@ class WorkerManager:
     def delete_vm(self, vm_info):
         """Borra una VM específica en su worker"""
         ssh = SSHConnection(
-            vm_info["ip"],
+            self.gateway_ip,
             vm_info["ssh_port"],
             self.ssh_user,
             self.ssh_pass,
@@ -121,7 +121,7 @@ class WorkerManager:
                 f"sudo ovs-vsctl --if-exists del-port br-int {vm_info['tap']}"
             )
             ssh.exec_sudo(f"sudo ip link delete {vm_info['tap']}")
-            print(f"🗑️ VM {vm_info['name']} eliminada en {vm_info['worker']}")
+            print(f"VM {vm_info['name']} eliminada en {vm_info['worker']}")
             ssh.close()
         else:
             print(
