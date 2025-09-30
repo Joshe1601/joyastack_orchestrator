@@ -1,4 +1,5 @@
 import random
+from ssh_utils import SSHConnection
 
 
 class WorkerManager:
@@ -28,6 +29,7 @@ class WorkerManager:
 
             vnc_port = vm_id  # VNC único
             mac_suffix = f"{random.randint(0, 255):02x}"  # Sufijo de MAC único para evitar conflictos
+            tap_name = f"br-int-VM{vm_id}-tap"
 
             vm_info = {
                 "name": f"VM{vm_id}",
@@ -42,16 +44,46 @@ class WorkerManager:
                 "mac": f"20:19:37:33:ee:{mac_suffix}",  # OJO: acá la MAC empieza con mi código :V
             }
 
-            # Aquí deberíamos ejecutar el script vm_create.sh en remoto pero por ahora simulamos
-            print(
-                f"{vm_info['name']} creada en {w_name} "
-                f"({wdata['ip']}:{wdata['ssh_port']})"
+            ssh = SSHConnection(
+                wdata["ip"], wdata["ssh_port"], self.ssh_user, self.ssh_pass
             )
-            print(f"   CPUs={cpus}, RAM={ram}MB, DISK={disk}GB, VLAN={vlan}")
+            if not ssh.connect():
+                print(f"No se pudo conectar a {w_name}")
+                continue
+
+            sftp = ssh.client.open_sftp()
+            sftp.put("vm_create.sh", "/tmp/vm_create.sh")
+            sftp.chmod("/tmp/vm_create.sh", 0o755)
+            sftp.close()
+
+            cmd = (
+                f"/tmp/vm_create.sh {vm_info['name']} br-int {vlan} {vnc_port} "
+                f"{vm_info['cpus']} {vm_info['ram']} {vm_info['disk']} {vm_info['mac']}"
+            )
+            out, err = ssh.exec_command(cmd)
+            print(f"➡️ Ejecutando en {w_name}: {cmd}")
+
+            if err:
+                print(f"Error creando VM en {w_name}: {err}")
+                ssh.close()
+                continue
+
+            print(out, err)
+
+            # Obtener el PID QEMU remoto
+            pid_cmd = f"pgrep -f '{tap_name}'"
+            out, err = ssh.exec_command(pid_cmd)
+            if out.strip():
+                vm_info["pid"] = out.strip()
+
+            ssh.close()
+
             print(
-                f"   Acceso VNC (local): vnc://127.0.0.1:{30010 + vm_id}\n"
-                f"   Ejecute en su PC:\n"
-                f"   ssh -NL :{30010 + vm_id}:127.0.0.1:{5900 + vnc_port} "
+                f"✅ {vm_info['name']} creada en {w_name}, PID={vm_info['pid']}"
+            )
+            print(
+                f"   Acceso VNC local: vnc://127.0.0.1:{30010+vm_id}\n"
+                f"   ssh -NL :{30010+vm_id}:127.0.0.1:{5900+vnc_port} "
                 f"{self.ssh_user}@10.20.12.28 -p {wdata['ssh_port']}"
             )
 

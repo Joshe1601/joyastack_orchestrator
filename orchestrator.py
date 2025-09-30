@@ -1,4 +1,3 @@
-# orchestrator.py
 import getpass
 import sys
 from worker_manager import WorkerManager
