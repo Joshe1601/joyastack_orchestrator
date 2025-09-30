@@ -59,7 +59,7 @@ class WorkerManager:
 
             cmd = (
                 f"/tmp/vm_create.sh {vm_info['name']} br-int {vlan} {vnc_port} "
-                f"{vm_info['cpus']} {vm_info['ram']} {vm_info['disk']} {vm_info['mac']}"
+                f"{vm_info['cpus']} {vm_info['ram']} {vm_info['disk']}"
             )
             print(f"Ejecutando en {w_name}: {cmd}")
             out, err = ssh.exec_command(cmd)
@@ -72,10 +72,12 @@ class WorkerManager:
             print(out, err)
 
             # Obtener el PID QEMU remoto
-            pid_cmd = f"pgrep -f '{tap_name}'"
+            pid_cmd = f"pgrep -f 'qemu-system-x86_64.*-name {vm_info['name']}'"
             out, err = ssh.exec_command(pid_cmd)
             if out.strip():
                 vm_info["pid"] = out.strip()
+            else:
+                vm_info["pid"] = None
 
             ssh.close()
 

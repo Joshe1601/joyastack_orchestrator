@@ -13,6 +13,7 @@
 
 # Validar parámetros
 if [ $# -ne 7 ]; then
+    echo "Error: Número incorrecto de parámetros."
     echo "Uso: $0 <NombreVM> <OvS> <VLAN> <VNC_PORT> <CPUs> <RAM_MB> <DISK_GB>"
     echo "Ejemplo: $0 VM1 br-int 100 1 1 256 1"
     exit 1
