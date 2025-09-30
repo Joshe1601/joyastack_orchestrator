@@ -30,6 +30,14 @@ class SSHConnection:
         stdin, stdout, stderr = self.client.exec_command(command)
         return stdout.read().decode(), stderr.read().decode()
 
+    def exec_sudo(self, command):
+        """Ejecuta un comando con sudo enviando la contraseña"""
+        cmd = f"sudo -S {command}"
+        stdin, stdout, stderr = self.client.exec_command(cmd)
+        stdin.write(self.password + "\n")
+        stdin.flush()
+        return stdout.read().decode(), stderr.read().decode()
+
     def close(self):
         if self.client:
             self.client.close()

@@ -62,7 +62,7 @@ class WorkerManager:
                 f"{vm_info['cpus']} {vm_info['ram']} {vm_info['disk']}"
             )
             print(f"Ejecutando en {w_name}: {cmd}")
-            out, err = ssh.exec_command(cmd)
+            out, err = ssh.exec_sudo(cmd)
 
             if err:
                 print(f"Error creando VM en {w_name}: {err}")
@@ -73,7 +73,7 @@ class WorkerManager:
 
             # Obtener el PID QEMU remoto
             pid_cmd = f"pgrep -f 'qemu-system-x86_64.*-name {vm_info['name']}'"
-            out, err = ssh.exec_command(pid_cmd)
+            out, err = ssh.exec_sudo(pid_cmd)
             if out.strip():
                 vm_info["pid"] = out.strip()
             else:
@@ -106,12 +106,34 @@ class WorkerManager:
                 f"VLAN={vm['vlan']} VNC-Port={vm['vnc_port']}"
             )
 
+    def delete_vm(self, vm_info):
+        """Borra una VM específica en su worker"""
+        ssh = SSHConnection(
+            vm_info["ip"],
+            vm_info["ssh_port"],
+            self.ssh_user,
+            self.ssh_pass,
+        )
+        if ssh.connect():
+            if vm_info.get("pid"):
+                ssh.exec_sudo(f"kill {vm_info['pid']}")
+
+            ssh.exec_sudo(
+                f"sudo ovs-vsctl --if-exists del-port br-int {vm_info['tap']}"
+            )
+            ssh.exec_sudo(f"sudo ip link delete {vm_info['tap']}")
+            print(f"🗑️ VM {vm_info['name']} eliminada en {vm_info['worker']}")
+            ssh.close()
+        else:
+            print(
+                f"No se pudo conectar a {vm_info['worker']} para borrar VM"
+            )
+
     def reset_cluster(self):
         confirm = input("Seguro que deseas borrar todas las VMs? (yes/no): ")
         if confirm.lower() == "yes":
-            print()
-            print("Eliminando VMs...")
-            self.vm_inventory = []  # Parar procesos QEMU
+            for vm in self.vm_inventory:
+                self.delete_vm(vm)
+            self.vm_inventory = []
         else:
-            print()
             print("Cancelado.")
