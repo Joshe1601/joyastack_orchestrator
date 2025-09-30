@@ -33,8 +33,10 @@ def main():
 
         match option:
             case "1":
-                print("Inicialización de Workers (solo para ejemplo)")
+                print()
+                print("Workers inicializados (solo para ejemplo)")
             case "2":
+                print()
                 num_vms = int(input("¿Cuántas VMs deseas crear?: "))
                 worker_mgr.create_vms(num_vms)
             case "3":

@@ -16,10 +16,11 @@ class WorkerManager:
         worker_names = list(self.workers.keys())
         for i in range(num_vms):
             vm_id = i + 1
-            wname = worker_names[i % len(worker_names)]
-            wdata = self.workers[wname]
+            w_name = worker_names[i % len(worker_names)]
+            wdata = self.workers[w_name]
 
-            print(f"\nConfiguración de VM{vm_id} (asignada a {wname})")
+            print()
+            print(f"\nConfiguración de VM{vm_id} (asignada a {w_name})")
             cpus = int(input("   CPUs: "))
             ram = int(input("   RAM (MB): "))
             disk = int(input("   Disco (GB): "))
@@ -30,7 +31,7 @@ class WorkerManager:
 
             vm_info = {
                 "name": f"VM{vm_id}",
-                "worker": wname,
+                "worker": w_name,
                 "ip": wdata["ip"],
                 "ssh_port": wdata["ssh_port"],
                 "cpus": cpus,
@@ -43,7 +44,7 @@ class WorkerManager:
 
             # Aquí deberíamos ejecutar el script vm_create.sh en remoto pero por ahora simulamos
             print(
-                f"{vm_info['name']} creada en {wname} "
+                f"{vm_info['name']} creada en {w_name} "
                 f"({wdata['ip']}:{wdata['ssh_port']})"
             )
             print(f"   CPUs={cpus}, RAM={ram}MB, DISK={disk}GB, VLAN={vlan}")
@@ -58,8 +59,10 @@ class WorkerManager:
 
     def list_vms(self):
         if not self.vm_inventory:
+            print()
             print("No hay VMs desplegadas")
             return
+        print()
         print("\n=== VMs desplegadas ===")
         for vm in self.vm_inventory:
             print(
@@ -71,7 +74,9 @@ class WorkerManager:
     def reset_cluster(self):
         confirm = input("Seguro que deseas borrar todas las VMs? (yes/no): ")
         if confirm.lower() == "yes":
+            print()
             print("Eliminando VMs...")
             self.vm_inventory = []  # Parar procesos QEMU
         else:
+            print()
             print("Cancelado.")

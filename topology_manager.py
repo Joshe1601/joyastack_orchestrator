@@ -67,6 +67,7 @@ class TopologyManager:
 
     def define_topology(self):
         if not self.vm_inventory:
+            print()
             print("No hay VMs para definir alguna topología")
             return
 
