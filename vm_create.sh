@@ -63,8 +63,13 @@ fi
 sudo ip link set dev $TAP_INTERFACE up
 
 # Conectar TAP al OvS con VLAN tag
-echo "Conectando $TAP_INTERFACE a $OVS_NAME con VLAN $VLAN_ID"
-sudo ovs-vsctl add-port $OVS_NAME $TAP_INTERFACE tag=$VLAN_ID
+if [ "$VLAN_ID" = "0" ] || [ "$VLAN_ID" = "none" ]; then
+    echo "Conectando $TAP_INTERFACE a $OVS_NAME sin VLAN (untagged)"
+    ovs-vsctl add-port "$OVS_NAME" "$TAP_INTERFACE"
+else
+    echo "Conectando $TAP_INTERFACE a $OVS_NAME con VLAN $VLAN_ID"
+    ovs-vsctl add-port "$OVS_NAME" "$TAP_INTERFACE" tag="$VLAN_ID"
+fi
 
 if [ $? -eq 0 ]; then
     echo "Interfaz conectada al OvS con VLAN tag $VLAN_ID"
