@@ -38,7 +38,7 @@ def create_linear(nodes):
 
 
 class TopologyManager:
-    def __init__(self, gateway_ip, vm_inventory, ssh_user, ssh_pass):
+    def __init__(self, vm_inventory, gateway_ip, ssh_user, ssh_pass):
         self.vm_inventory = vm_inventory
         self.ssh_user = ssh_user
         self.ssh_pass = ssh_pass
@@ -92,35 +92,38 @@ class TopologyManager:
         draw_topology(topology, "Topología Compuesta")
 
     def define_topology(self):
-        if not self.vm_inventory:
-            print()
-            print("No hay VMs para definir alguna topología")
-            return
+        try:
+            if not self.vm_inventory:
+                print()
+                print("No hay VMs para definir alguna topología")
+                return
 
-        vm_names = [vm["name"] for vm in self.vm_inventory]
-        print("\nVMs disponibles:", ", ".join(vm_names))
+            vm_names = [vm["name"] for vm in self.vm_inventory]
+            print("\nVMs disponibles:", ", ".join(vm_names))
 
-        print("Seleccione topología:")
-        print("1) Simple - Lineal")
-        print("2) Simple - Anillo")
-        print("3) Simple - Árbol")
-        print("4) Compuesta")
+            print("Seleccione topología:")
+            print("1) Simple - Lineal")
+            print("2) Simple - Anillo")
+            print("3) Simple - Árbol")
+            print("4) Compuesta")
 
-        option = input("> ")
+            option = input("> ")
 
-        if option == "1":
-            self.apply_vlan_topology("lineal", self.gateway_ip, self.ssh_user, self.ssh_pass)
-            create_linear(vm_names)
-        elif option == "2":
-            self.apply_vlan_topology("anillo", self.gateway_ip, self.ssh_user, self.ssh_pass)
-            create_ring(vm_names)
-        elif option == "3":
-            self.apply_vlan_topology("arbol", self.gateway_ip, self.ssh_user, self.ssh_pass)
-            create_tree(vm_names)
-        elif option == "4":
-            self.create_composite()
-        else:
-            print("Opción inválida")
+            if option == "1":
+                self.apply_vlan_topology("lineal", self.gateway_ip, self.ssh_user, self.ssh_pass)
+                create_linear(vm_names)
+            elif option == "2":
+                self.apply_vlan_topology("anillo", self.gateway_ip, self.ssh_user, self.ssh_pass)
+                create_ring(vm_names)
+            elif option == "3":
+                self.apply_vlan_topology("arbol", self.gateway_ip, self.ssh_user, self.ssh_pass)
+                create_tree(vm_names)
+            elif option == "4":
+                self.create_composite()
+            else:
+                print("Opción inválida")
+        except Exception as e:
+            print(f"Error definiendo topología: {e}")
 
     def apply_vlan_topology(
             self, topo_type, gateway_ip, ssh_user, ssh_pass
@@ -139,12 +142,14 @@ class TopologyManager:
         # Limpieza previa de VLAN tags existentes
         print("Limpiando etiquetas VLAN existentes...")
         for vm in self.vm_inventory:
+            print(vm["name"], vm["worker"])
             conn = SSHConnection(gateway_ip, vm["ssh_port"], ssh_user, ssh_pass)
             if conn.connect():
                 conn.exec_sudo(f"ovs-vsctl clear port {vm['tap']} tag")
                 conn.close()
 
         vlan_id = self.next_vlan_id
+        print(f"Siguiente VLAN ID a usar: {vlan_id}")
 
         # ---------------------- TOPOLOGÍA LINEAL ----------------------
         if topo_type == "lineal":
@@ -156,7 +161,7 @@ class TopologyManager:
                 print(f"  VLAN {vlan_id}: {vm_a['name']} <-> {vm_b['name']}")
                 for vm in (vm_a, vm_b):
                     conn = SSHConnection(
-                        vm["ip"], vm["ssh_port"], ssh_user, ssh_pass
+                        gateway_ip, vm["ssh_port"], ssh_user, ssh_pass
                     )
                     if conn.connect():
                         conn.exec_sudo(
@@ -175,7 +180,7 @@ class TopologyManager:
                 print(f"  VLAN {vlan_id}: {vm_a['name']} <-> {vm_b['name']}")
                 for vm in (vm_a, vm_b):
                     conn = SSHConnection(
-                        vm["ip"], vm["ssh_port"], ssh_user, ssh_pass
+                        gateway_ip, vm["ssh_port"], ssh_user, ssh_pass
                     )
                     if conn.connect():
                         conn.exec_sudo(
@@ -189,7 +194,7 @@ class TopologyManager:
             print("\nConfigurando topología BUS (una sola VLAN)...")
             print("  VLAN", vlan_id, ":", ", ".join([v["name"] for v in self.vm_inventory]))
             for vm in self.vm_inventory:
-                conn = SSHConnection(vm["ip"], vm["ssh_port"], ssh_user, ssh_pass)
+                conn = SSHConnection(gateway_ip, vm["ssh_port"], ssh_user, ssh_pass)
                 if conn.connect():
                     conn.exec_sudo(f"ovs-vsctl set port {vm['tap']} tag={vlan_id}")
                     conn.close()
